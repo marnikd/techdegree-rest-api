@@ -60,22 +60,30 @@ const authenticateUser = async (req, res, next) => {
   };
 
   router.get('/users', authenticateUser,  asyncHandler(async (req, res) => {
-    const users = await User.findAll({
+   
+    const user = await User.findByPk(req.currentUser.id, {
       attributes: ['id', 'firstName', 'lastName', 'emailAddress']});
     res.json({
-      users
+      user
     });
   }));
 
 
 // Route that creates a new user.
 router.post('/users', asyncHandler(async (req, res) => {
-  const user = await User.build(req.body);
+  try{ const user = await User.build(req.body);
   user.password = bcryptjs.hashSync(user.password);
   await user.save();
   res.location('/');
   // Set the status to 201 Created and end the response.
-  return res.status(201).end();
+    return res.status(201).end();
+  } catch(error){
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        message: error.message
+      });;
+    }
+  }
 }));
 
 router.get('/courses', asyncHandler(async (req, res) => {
@@ -113,21 +121,38 @@ router.get('/courses', asyncHandler(async (req, res) => {
 
   // Route that creates a new course
 router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
+ try{
   const course = await Course.create(req.body);
   res.location('/courses/'+course.id);
   // Set the status to 201 Created and end the response.
   return res.status(201).end();
+ }
+  catch(error){
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        message: error.message
+      });;
+    }
+  }
 }));
 
   // Route that updates a course
   router.put('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
-  
+  try{
     const course = await Course.findByPk(req.params.id);
     if(req.currentUser.id === course.userId){
       await course.update(req.body);
       return res.status(204).end();
     } else{
       return res.status(403).end();
+    }
+  }
+    catch(error){
+      if (error.name === 'SequelizeValidationError') {
+        return res.status(400).json({
+          message: error.message
+        });;
+      }
     }
   }));
 
