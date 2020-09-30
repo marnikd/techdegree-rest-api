@@ -15,7 +15,7 @@ function asyncHandler(cb){
     try {
       await cb(req, res, next)
     } catch(error){
-      res.status(500).send(error);
+      next(error);
     }
   }
 }
@@ -71,8 +71,11 @@ const authenticateUser = async (req, res, next) => {
 
 // Route that creates a new user.
 router.post('/users', asyncHandler(async (req, res) => {
-  try{ const user = await User.build(req.body);
-  user.password = bcryptjs.hashSync(user.password);
+  try{ 
+  const user = await User.build(req.body);
+  if(user.password){
+    user.password = bcryptjs.hashSync(user.password);
+  }
   await user.save();
   res.location('/');
   // Set the status to 201 Created and end the response.
@@ -122,10 +125,22 @@ router.get('/courses', asyncHandler(async (req, res) => {
   // Route that creates a new course
 router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
  try{
+  if(req.body.userId){
+  const users = await User.findAll();
+  const user = users.find((user) => {
+    return req.body.userId === user.id;
+  });
+    if(!user){
+     return res.status(400).json({
+        message: "No user found with specified UserId"
+      })
+    }
+  
   const course = await Course.create(req.body);
   res.location('/courses/'+course.id);
   // Set the status to 201 Created and end the response.
   return res.status(201).end();
+  }
  }
   catch(error){
     if (error.name === 'SequelizeValidationError') {
@@ -139,10 +154,27 @@ router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
   // Route that updates a course
   router.put('/courses/:id', authenticateUser, asyncHandler(async (req, res) => {
   try{
+    if(req.body.userId){
+      const users = await User.findAll();
+      const user = users.find((user) => {
+        return req.body.userId === user.id;
+      });
+        if(!user){
+         return res.status(400).json({
+            message: "No user found with specified UserId"
+          })
+        }
+    }
     const course = await Course.findByPk(req.params.id);
     if(req.currentUser.id === course.userId){
-      await course.update(req.body);
-      return res.status(204).end();
+      if(req.body.userId && req.body.title && req.body.description){
+        await course.update(req.body);
+        return res.status(204).end();
+      } else{
+        return res.status(400).json({
+          message: "Please provide a value for userId, title and description"
+        });
+      } 
     } else{
       return res.status(403).end();
     }
@@ -151,7 +183,7 @@ router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
       if (error.name === 'SequelizeValidationError') {
         return res.status(400).json({
           message: error.message
-        });;
+        });
       }
     }
   }));

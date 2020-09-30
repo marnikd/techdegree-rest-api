@@ -41,19 +41,7 @@ module.exports = (sequelize) => {
     materialsNeeded: {
         type: Sequelize.STRING,
         allowNull: true
-      },
-    userId: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      validate: {
-        notNull: {
-          msg: 'Please provide a value for the user ID',
-        },
-        notEmpty: {
-          msg: 'Please provide a value for the user ID',
-        }
       }
-    }
   }, 
   {
     sequelize 
