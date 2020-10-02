@@ -72,6 +72,15 @@ const authenticateUser = async (req, res, next) => {
 // Route that creates a new user.
 router.post('/users', asyncHandler(async (req, res) => {
   try{ 
+  const userList = await User.findAll();
+  const userWithEmail = userList.find((user) => {
+    return req.body.emailAddress === user.emailAddress;
+  });
+    if(userWithEmail){
+      return res.status(400).json({
+        message: "This email address is already in use"
+      });
+  }
   const user = await User.build(req.body);
   if(user.password){
     user.password = bcryptjs.hashSync(user.password);
@@ -84,7 +93,7 @@ router.post('/users', asyncHandler(async (req, res) => {
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({
         message: error.message
-      });;
+      });
     }
   }
 }));
