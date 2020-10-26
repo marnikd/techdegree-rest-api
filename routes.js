@@ -141,14 +141,18 @@ router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
   });
     if(!user){
      return res.status(400).json({
-        message: "No user found with specified UserId"
-      })
+        message: "No user found with specified userId"
+      });
     }
   
   const course = await Course.create(req.body);
   res.location('/courses/'+course.id);
   // Set the status to 201 Created and end the response.
   return res.status(201).end();
+  } else{
+    return res.status(400).json({
+      message: "No userId is provided"
+    });
   }
  }
   catch(error){
@@ -170,7 +174,7 @@ router.post('/courses', authenticateUser, asyncHandler(async (req, res) => {
       });
         if(!user){
          return res.status(400).json({
-            message: "No user found with specified UserId"
+            message: "No user found with specified userId"
           })
         }
     }
